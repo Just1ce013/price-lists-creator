@@ -141,6 +141,7 @@ def yandex_old(from_db):
             kod.text = el[8]
             count = et.SubElement(offer, 'count')
             count.text = str(el[6])
+
     my_file = open("yandex_old.xml", "w", encoding="utf-8")
     my_file.write(minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   "))
 
@@ -212,6 +213,10 @@ def yandex_new(session):
             external_id = detail["external_id"]
             offer = et.SubElement(offers, 'offer')
             offer.set("id", external_id.replace("-","")[:20])
+            external_id = detail["external_id"]
+            offer = et.SubElement(offers, 'offer')
+            offer.set("id", detail["external_id"].replace("-","")[:20])
+
             name = et.SubElement(offer, 'name')
             name.text = detail["title"]
             vendorCode = et.SubElement(offer, 'vendorCode')
@@ -219,9 +224,18 @@ def yandex_new(session):
             url = et.SubElement(offer, 'url')
             url.text = BASE_URL + "/" + detail["uri"]
             price = et.SubElement(offer, 'price')
+
             price.text = str(detail["price"])
             currencyId = et.SubElement(offer, 'currencyId')
             currencyId.text = "RUR"
+            if detail["price"] == 0 or detail["price"] == 0.0 or round(detail["price"]) == 0:
+                continue
+            else:    
+                price.text = str(detail["price"])
+            currencyId = et.SubElement(offer, 'currencyId')
+            currencyId.text = "RUR"
+            if category == "Распродажа":
+                continue
             categoryId = et.SubElement(offer, 'categoryId')
             categoryId.text = str(category_ids[category])
             if category == "УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370" or category == "Урал" or category == "КАМАЗ" or category == "ЯМЗ":
@@ -284,9 +298,11 @@ def yandex_new(session):
         
         start += limit
     
+
     my_file = open("yandex.xml", "w", encoding="utf-8")
     my_file.write(minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   "))
-    
+ 
+ 
 def main():
     yandex_old(get_data_from_base())
     print("XML для яндекса готова")

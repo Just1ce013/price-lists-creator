@@ -108,12 +108,12 @@ def obzhee():
             drom_check = True
             avito_check = True
             zzap_check = True
+            
             #Общие проверки
             if detail["code"] == None or detail["code"] == "":
                 continue
             if len(detail["storage"]) == 0:
                 continue 
-            
             category = list(filter(None, detail["uri"].split('/')))[1]
             #Проверка spl
             if category in categories.keys():
@@ -254,14 +254,9 @@ def obzhee():
 def main():
     obzhee()
     print("Общий метод завершил работу")
-    # yandex_new(session)
-    # print("Yandex метод завершил работу")   
-
-def test():
-    a = "/katalog-zapchastej/ural-63685-636746563-dorozhnaya-gamma-i-ural-6370/amortizator-kabiny-perednij-30-5001010-3374122070"
-    b = list(filter(None, a.split('/')))
-    for el in b:
-        print(str(b.index(el)) + " " + el)
+    yandex_new(session)
+    print("Yandex метод завершил работу")   
+    
         
 if __name__ == "__main__":
     main()    
