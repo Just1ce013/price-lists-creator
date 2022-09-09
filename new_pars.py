@@ -1,7 +1,10 @@
 import requests
 from requests.adapters import HTTPAdapter
-from datetime import date
+from datetime import date, datetime
 import xlsxwriter as xl
+import xml.etree.ElementTree as et
+from xml.etree.ElementTree import ElementTree
+from xml.dom import minidom
 from yandex_market import yandex_new
 
 categories = {"ural":"Урал","ural-63685-636746563-dorozhnaya-gamma-i-ural-6370":"УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370",
@@ -14,6 +17,21 @@ categories = {"ural":"Урал","ural-63685-636746563-dorozhnaya-gamma-i-ural-63
               "pricepy":"Прицепы","prochie":"Прочие","radiatory-lrz":"Радиаторы ЛРЗ","rvd":"РВД","t-150":"Т-150","t-170":"Т-170","t-40":"Т-40",
               "filtry-i-komplekty-prokladok-motordetal":"Фильтры и комплекты прокладок МОТОРДЕТАЛЬ","shaaz":"ШААЗ","ekskavator":"Экскаватор",
               "yumz":"ЮМЗ","rasprodazha":"Распродажа"}
+category_names = {"ural":"Урал","ural-63685-636746563-dorozhnaya-gamma-i-ural-6370":"УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370",
+              "yamz":"ЯМЗ","kamaz":"КАМАЗ","maz":"МАЗ","uaz":"УАЗ","elektrooborudovanie":"Электрооборудование","gaz-gruzovoj":"ГАЗ грузовой",
+              "gaz-legkovoj":"ГАЗ легковой","gidrosila":"Гидросила","porschnevaya-gruppa":"Поршневая группа","zil":"ЗИЛ","avtoshiny":"Автошины",
+              "cat":"CAT","hitachi":"Hitachi","hyundai":"HYUNDAI","iveco":"IVECO","komatsu":"KOMATSU","avtobusy":"Автобусы","avtokrany-i-kmu":"Автокраны и КМУ",
+              "akkumulyatory":"Аккумуляторы","vaz":"ВАЗ","dz-98-dz-180":"ДЗ-98; ДЗ-180","dt-75":"ДТ-75","instrument":"Инструмент",
+              "legkovye-inomarkigruzovye-inomarkikommercheskij-transport":"Легковые иномарки","mtz":"МТЗ","pogruzchiki":"Погрузчики",
+              "podshipniki":"Подшипники","porschnevaya-gruppa-vaz-motordetal":"Поршневая группа ВАЗ Мотордеталь","porschnevaya-gruppa-urkaina":"Поршневая группа Украина",
+              "pricepy":"Прицепы","prochie":"Прочие ","radiatory-lrz":"Радиаторы ЛРЗ","rvd":"РВД","t-150":"Т-150","t-170":"Т-170","t-40":"Т-40",
+              "filtry-i-komplekty-prokladok-motordetal":"Фильтры и комплекты прокладок МОТОРДЕТАЛЬ","shaaz":"ШААЗ","ekskavator":"Экскаватор",
+              "yumz":"ЮМЗ","rasprodazha":"Распродажа"}
+category_ids = {"Автобусы": 1, "Автокраны и КМУ": 2, "Автошины": 3, "Аккумуляторы": 4, "ВАЗ": 5, "ГАЗ грузовой": 6, "ГАЗ легковой": 7, "Гидросила": 8, "ДЗ-98; ДЗ-180": 9, "ДТ-75": 10, 
+                "ЗИЛ": 11, "Инструмент": 12, "КАМАЗ": 13, "Легковые иномарки": 14, "МАЗ": 15, "МТЗ": 16, "Погрузчики": 17, "Подшипники": 18, "Поршневая группа": 19, "Поршневая группа ВАЗ Мотордеталь": 20, 
+                "Поршневая группа Мотордеталь": 21, "Поршневая группа Украина": 22, "Прицепы": 23, "Прочие ": 24, "РВД": 25, "Радиаторы ЛРЗ": 26, "Т-150": 27, "Т-170": 28, "Т-40": 29, "УАЗ": 30, 
+                "УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370": 31, "Урал": 32, "Фильтры и комплекты прокладок МОТОРДЕТАЛЬ": 33, "ШААЗ": 34, "Экскаватор": 35, "Электрооборудование": 36, "ЮМЗ": 37, "ЯМЗ": 38, "CAT": 39, "HYUNDAI": 40, 
+                "Hitachi": 41, "IVECO": 42, "KOMATSU": 43}
 fields_for_spl = ["Производитель", "Артикул", "Код", "Название", 
                       "Цена для всех складов", "Общее количество деталей в наличии", 
                       "г.Челябинск, ул.Линейная 98", "г.Челябинск, ул.Линейная 98, цена", 
@@ -37,7 +55,7 @@ today = str(date.today()).split('-')
 tdbovid_adapter = HTTPAdapter(max_retries=5)
 session = requests.Session()
 session.mount(BASE_URL, tdbovid_adapter)              
-        
+tree = ElementTree()       
 
 def write_column_names(worksheet, names):
     for j in range(0, len(names)):
@@ -109,7 +127,11 @@ def obzhee():
             avito_check = True
             zzap_check = True
             #Общие проверки
+            if detail["searchable"] == 0 or detail["published"] == 0:
+                continue
             if detail["code"] == None or detail["code"] == "":
+                continue
+            if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
                 continue
             if len(detail["storage"]) == 0:
                 continue 
@@ -156,6 +178,7 @@ def obzhee():
             if nalichie_obzhee == 0:
                 drom_check = False
                 gis_check = False
+                avito_check = False
             
             links = pic_links(detail["images"])
             
@@ -243,7 +266,7 @@ def obzhee():
                     detail["article"],
                     detail["title"],
                     detail["price"],
-                    count,
+                    nalichie_lineynaya,
                     "0 дней",
                     links
                 ])
@@ -251,11 +274,198 @@ def obzhee():
         start += limit                        
 
 
+def sberMarket_xml():
+    start = 0
+    limit = 1000
+    yml_catalog = et.Element('yml_catalog')
+    now = str(date.today()) + " " + str(datetime.now().time().hour) + ":" + str(datetime.now().time().minute)
+    yml_catalog.set('date', now)
+    shop = et.SubElement(yml_catalog, 'shop')
+    name = et.SubElement(shop, 'name')
+    name.text = 'Торговый Дом "БОВИД"'
+    company = et.SubElement(shop, 'company')
+    company.text = 'АО "Торговый Дом "БОВИД"'
+    url = et.SubElement(shop, 'url')
+    url.text = "https://tdbovid.ru"
+    currencies = et.SubElement(shop, 'currencies')
+    RUR = et.SubElement(currencies, 'currency')
+    RUR.set('id', "RUR")
+    RUR.set('rate', '1')
+    categories = et.SubElement(shop, 'categories')
+    for c in category_ids:
+        category = et.SubElement(categories, 'category')
+        category.set('id', str(category_ids[c]))
+        category.text = c
+    offers = et.SubElement(shop, 'offers')
+    while True:
+        details = session.get(f"http://tdbovid.ru:3500/api/position?start={start}&limit={limit}").json()
+        if len(details) == 0:
+            break
+        for detail in details:
+            if detail["code"] == None or detail["code"] == "":
+                continue
+            if len(detail["storage"]) == 0:
+                continue
+            if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
+                continue
+            nalichie = 0
+            for el in detail["storage"]:
+                str_amount = str(el["amount"])
+                if el["namestorage"] == "г.Челябинск, ул.Линейная, 98":
+                    if str_amount[0] != "-":
+                        if str_amount.find("\xa0") > 0:
+                            nalichie = round(float(str_amount[:str_amount.find("\xa0")]))
+                        else:
+                            nalichie = round(float(str_amount.replace(",",".")))
+            if nalichie == 0 or nalichie == 0.0 or str(nalichie) == "":
+                continue
+            splited_url = list(filter(None, detail["uri"].split('/')))
+            if splited_url[1] in category_names.keys():
+                detail_category = category_names[splited_url[1]]
+            else:
+                continue
+            if detail_category == "Распродажа":
+                continue
+            if detail["price"] == 0 or detail["price"] == 0.0 or round(detail["price"]) == 0 or str(detail["price"]) == "":
+                continue                 
+            external_id = detail["external_id"]
+            offer = et.SubElement(offers, 'offer')
+            offer.set('id', external_id.replace("-","")[:20])
+            offer.set('available', "True")
+            detail_url = et.SubElement(offer, 'url')
+            detail_url.text = BASE_URL + detail["uri"]
+            detail_name = et.SubElement(offer, 'name')
+            detail_name.text = detail["title"]
+            price = et.SubElement(offer, 'price')
+            price.text = detail["price"]
+            categoryId = et.SubElement(offer, 'categoryId')
+            categoryId.text = str(category_ids[detail_category])
+            pic_links = list(filter(None, pic_link(detail["images"]).split(',')))
+            if len(pic_links) > 0:
+                for pic in pic_links:
+                    pic = pic.strip()
+                    picture = et.SubElement(offer, 'picture')
+                    picture.text = pic
+            vendor = et.SubElement(offer, 'vendor')
+            vendor.text = detail_category
+            vendor_code = et.SubElement(offer, 'vendorCode')
+            vendor_code.text = detail["article"]
+            description = et.SubElement(offer, 'description')
+            description.text = detail["title"]
+            outlets = et.SubElement(offer, 'outlets')
+            outlet = et.SubElement(outlets, 'outlet')
+            outlet.set('id', "1")
+            outlet.set('instock', str(nalichie))
+            if len(detail["article"]) > 1:
+                artikul = et.SubElement(offer, "param")
+                artikul.set("name", 'Артикул')
+                artikul.text = str(detail["article"])
+            kod = et.SubElement(offer, 'param')
+            kod.set("name", 'Код')
+            kod.text = str(detail["code"])
+            if detail_category == "УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370" or detail_category == "Урал" or detail_category == "КАМАЗ" or detail_category == "ЯМЗ":
+                country_of_origin = et.SubElement(offer, 'param')
+                country_of_origin.set('name', "Страна-изготовитель")
+                country_of_origin.text = "Россия"
+                
+        start += limit
+    f_str = minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   ")
+    tree._setroot(et.fromstring(f_str))
+    tree.write("sberMegaMarket.xml", encoding = "UTF-8", xml_declaration = True)            
+                
+
+def sberMarket_xls():
+    fields = ["id", "Доступность товара", "Категория", "Производитель", "Артикул", "Модель", "Название", "Цена", "Остаток", "НДС", "Ссылки на картинки"]
+    start = 0
+    limit = 1000
+    workbook = xl.Workbook("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_sber.xlsx")
+    worksheet = workbook.add_worksheet()
+    write_column_names(worksheet, fields)
+    data_for_sber = []
+    while True:
+        details = session.get(f"http://tdbovid.ru:3500/api/position?start={start}&limit={limit}").json()
+        if len(details) == 0:
+            write_data(worksheet, 1, data_for_sber, len(fields))
+            workbook.close()   
+            break
+        for detail in details:
+            if detail["searchable"] == 0 or detail["published"] == 0:
+                continue
+            if detail["code"] == None or detail["code"] == "":
+                continue
+            if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
+                continue
+            if len(detail["storage"]) == 0:
+                continue 
+            vendor_in_url = list(filter(None, detail["uri"].split('/')))[1]
+            if vendor_in_url in categories.keys():
+                vendor = categories[vendor_in_url]
+            else:
+                continue
+            nalichie = 0
+            title = detail["title"]
+            if title.find("...") > 0:
+                title = title.replace("...", "")
+            if vendor == "Распродажа":
+                continue
+            if detail["price"] == 0 or detail["price"] == 0.0 or round(detail["price"]) == 0 or str(detail["price"]) == "":
+                continue 
+            for el in detail["storage"]:
+                amount = str(el["amount"])
+                if el["codestorage"] == "00006" or el["codestorage"] == "00008":
+                    if amount[0] != "-":
+                        if amount.find("\xa0") > 0:
+                            count = round(int(amount[:amount.find("\xa0")]))
+                            nalichie += count
+                        else:
+                            nalichie += el["amount"]
+            if nalichie == 0:
+                continue
+            price = detail["price"] * 1.05
+            data_for_sber.append([
+                    detail["code"],
+                    "Доступен",
+                    "Автозапчасти для грузовиков",
+                    vendor,
+                    detail["article"],
+                    title,
+                    title,
+                    price,
+                    nalichie,
+                    20,
+                    pic_links(detail["images"])
+                ])
+        start += limit
+        
+                
+def pic_link(imgs):
+    pic_links = ""
+    if len(imgs) > 0:
+        count = len(imgs)/3
+        for el in imgs:
+            if el["url"].find("small") == -1 and el["url"].find("medium") == -1:
+                url = BASE_URL + el["url"]
+                if el["parent"] == 0:
+                    pic_links = url + ", " + pic_links
+                else:
+                    pic_links += url
+                if count > 1:
+                    pic_links += ", "
+                    count = count - 1
+    return pic_links                    
+    
+    
 def main():
+    start = datetime.now()
     obzhee()
     print("Общий метод завершил работу")
-    # yandex_new(session)
-    # print("Yandex метод завершил работу")   
+    yandex_new(session)
+    print("Yandex метод завершил работу")
+    sberMarket_xls()
+    print("Тест для сбера сформирован")
+    total = (datetime.now() - start).total_seconds()
+    print("Общее время - " + str(int(total//3600)) + ":" + str(int((total % 3600)//60)) + ":" + str(round(total % 60)))
+    
 
 def test():
     a = "/katalog-zapchastej/ural-63685-636746563-dorozhnaya-gamma-i-ural-6370/amortizator-kabiny-perednij-30-5001010-3374122070"

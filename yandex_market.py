@@ -141,8 +141,9 @@ def yandex_old(from_db):
             kod.text = el[8]
             count = et.SubElement(offer, 'count')
             count.text = str(el[6])
-    my_file = open("yandex_old.xml", "w", encoding="utf-8")
-    my_file.write(minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   "))
+    f_str = minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   ")
+    tree._setroot(et.fromstring(f_str))
+    tree.write("yandex с сайта.xml", encoding = "UTF-8", xml_declaration = True)
 
 
 def yandex_new(session):
@@ -186,9 +187,13 @@ def yandex_new(session):
             break;
         for detail in details:
             amount = 0
+            if detail["searchable"] == 0 or detail["published"] == 0:
+                continue
             if detail["code"] == None or detail["code"] == "":
                 continue
             if len(detail["storage"]) == 0:
+                continue
+            if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
                 continue
             for el in detail["storage"]:
                 if el["namestorage"] == "г.Челябинск, ул.Линейная, 98":
@@ -202,16 +207,16 @@ def yandex_new(session):
                 continue
             splited_url = list(filter(None, detail["uri"].split('/')))
             if splited_url[1] in category_names.keys():
-                category = category_names[splited_url[1]]
+                detail_category = category_names[splited_url[1]]
             else:
                 continue
-            if category == "Распродажа":
+            if detail_category == "Распродажа":
                 continue
             if detail["price"] == 0 or detail["price"] == 0.0 or round(detail["price"]) == 0 or str(detail["price"]) == "":
                 continue
             external_id = detail["external_id"]
             offer = et.SubElement(offers, 'offer')
-            offer.set("id", external_id.replace("-","")[:20])
+            offer.set('id', external_id.replace("-","")[:20])
             name = et.SubElement(offer, 'name')
             name.text = detail["title"]
             vendorCode = et.SubElement(offer, 'vendorCode')
@@ -223,8 +228,8 @@ def yandex_new(session):
             currencyId = et.SubElement(offer, 'currencyId')
             currencyId.text = "RUR"
             categoryId = et.SubElement(offer, 'categoryId')
-            categoryId.text = str(category_ids[category])
-            if category == "УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370" or category == "Урал" or category == "КАМАЗ" or category == "ЯМЗ":
+            categoryId.text = str(category_ids[detail_category])
+            if detail_category == "УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370" or detail_category == "Урал" or detail_category == "КАМАЗ" or detail_category == "ЯМЗ":
                 country_of_origin = et.SubElement(offer, 'country_of_origin')
                 country_of_origin.text = "Россия"
             
@@ -256,36 +261,36 @@ def yandex_new(session):
             store.text = "true"
             sposobi_oplati = et.SubElement(offer, 'sales_notes')
             sposobi_oplati.text = "Наличные, онлайн-оплата на сайте или платеж по счету."
-            dostavka = et.SubElement(offer, "sales_notes")
+            dostavka = et.SubElement(offer, 'sales_notes')
             dostavka.text = "Доставка оплачивается отдельно."
-            sroki_dostavki = et.SubElement(offer, "sales_notes")
+            sroki_dostavki = et.SubElement(offer, 'sales_notes')
             sroki_dostavki.text = "Доставим за 4 часа или отправим по всей России."
-            sposobi_dostavki = et.SubElement(offer, "sales_notes")
+            sposobi_dostavki = et.SubElement(offer, 'sales_notes')
             sposobi_dostavki.text = "Доставка по регионам любой ТК: СДЭК, Деловые Линии, ПЭК, КИТ и др."
             predoplata = et.SubElement(offer, 'sales_notes')
             predoplata.text = "Необходима предоплата 100%."
-            description = et.SubElement(offer, "description")
+            description = et.SubElement(offer, 'description')
             description.text = """<p>Компания ТД БОВИД являемся одним из крупнейших поставщиков в России и официальным дилером АО «Автомобильный завод «УРАЛ», ПАО</p>
             <p>«КАМАЗ», ПАО «Автодизель», АО «ЯЗДА», ООО «УАЗ», ООО</p><p>«ИВЕКО-АМТ», ООО «Автоцентр ОСВАР», АО «Гидросила М»,</p>
             <p>представителем 35 отечественных заводов-изготовителей, а также</p>
             <p>IVECO, VOLVO, RENAULT TRUCKS и спецтехнике KOMATSU, HITACHI, </p><p>CATERPILLAR.</p>"""
-            proizvoditel = et.SubElement(offer, "param")
-            proizvoditel.set("name", "Производитель")
-            proizvoditel.text = category
+            proizvoditel = et.SubElement(offer, 'param')
+            proizvoditel.set("name", 'Производитель')
+            proizvoditel.text = detail_category
             if len(detail["article"]) > 1:
                 artikul = et.SubElement(offer, "param")
-                artikul.set("name", "Артикул")
+                artikul.set("name", 'Артикул')
                 artikul.text = detail["article"]
-            kod = et.SubElement(offer, "param")
-            kod.set("name", "Код")
+            kod = et.SubElement(offer, 'param')
+            kod.set("name", 'Код')
             kod.text = detail["code"]
             count = et.SubElement(offer, 'count')
             count.text = str(amount)
         
         start += limit
-    
-    my_file = open("yandex.xml", "w", encoding="utf-8")
-    my_file.write(minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   "))
+    f_str = minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   ")
+    tree._setroot(et.fromstring(f_str))
+    tree.write("yandex.xml", encoding = "UTF-8", xml_declaration = True)
     
 def main():
     yandex_old(get_data_from_base())
