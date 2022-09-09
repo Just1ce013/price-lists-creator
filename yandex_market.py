@@ -141,9 +141,11 @@ def yandex_old(from_db):
             kod.text = el[8]
             count = et.SubElement(offer, 'count')
             count.text = str(el[6])
+
     f_str = minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   ")
     tree._setroot(et.fromstring(f_str))
     tree.write("yandex с сайта.xml", encoding = "UTF-8", xml_declaration = True)
+
 
 
 def yandex_new(session):
@@ -224,9 +226,18 @@ def yandex_new(session):
             url = et.SubElement(offer, 'url')
             url.text = BASE_URL + "/" + detail["uri"]
             price = et.SubElement(offer, 'price')
+
             price.text = str(detail["price"])
             currencyId = et.SubElement(offer, 'currencyId')
             currencyId.text = "RUR"
+            if detail["price"] == 0 or detail["price"] == 0.0 or round(detail["price"]) == 0:
+                continue
+            else:    
+                price.text = str(detail["price"])
+            currencyId = et.SubElement(offer, 'currencyId')
+            currencyId.text = "RUR"
+            if category == "Распродажа":
+                continue
             categoryId = et.SubElement(offer, 'categoryId')
             categoryId.text = str(category_ids[detail_category])
             if detail_category == "УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370" or detail_category == "Урал" or detail_category == "КАМАЗ" or detail_category == "ЯМЗ":
@@ -291,7 +302,8 @@ def yandex_new(session):
     f_str = minidom.parseString(et.tostring(yml_catalog)).toprettyxml(indent = "   ")
     tree._setroot(et.fromstring(f_str))
     tree.write("yandex.xml", encoding = "UTF-8", xml_declaration = True)
-    
+
+
 def main():
     yandex_old(get_data_from_base())
     print("XML для яндекса готова")
