@@ -329,7 +329,8 @@ def save_to_xlsx(base):
 def main():    
     start = datetime.now()
     all_links = get_catalog(get_page(URL))        
-    with ThreadPool(13) as pool:
+    with ThreadPool(25) as pool:
+        pool.map(download_images, all_links)
         pool.map(get_item, all_links)
     update_database()
     filepaths = copy_databases()
