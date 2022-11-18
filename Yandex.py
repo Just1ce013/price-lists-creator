@@ -4,6 +4,7 @@ import xml.etree.ElementTree as et
 from xml.dom import minidom
 import wget
 import os
+from PIL import Image
 
 
 class Yandex(Ploschadka):
@@ -71,7 +72,7 @@ class Yandex(Ploschadka):
                 if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
                     continue
                 for el in detail["storage"]:
-                    if el["namestorage"] == "г.Челябинск, ул.Линейная, 98":
+                    if el["namestorage"] == "г.Челябинск, ул.Линейная, 98" or el["namestorage"] == "г. Челябинск, ул.Линейная, 98":
                         str_amount = str(el["amount"])
                         if str_amount != "-":
                             if str_amount.find("\xa0") > 0:
@@ -90,11 +91,36 @@ class Yandex(Ploschadka):
                 if detail["price"] == 0 or detail["price"] == 0.0 or round(detail["price"]) == 0 or str(detail["price"]) == "":
                     continue
                 pic_links = list(filter(None, self.pic_links(detail["images"]).split(',')))
+                external_id = detail["external_id"]
                 if without_space_pic and len(pic_links) == 0:
                     continue
-                external_id = detail["external_id"]
+                links = {"correct": "", "uncorrect": ""}
+                for pic in pic_links:
+                    i = pic_links.index(pic)
+                    pic = pic.strip()
+                    if not os.path.exists("D:/parsing/pic/" + external_id + "_" + str(i) + ".jpeg"):
+                        wget.download(pic, "D:/parsing/pic/" + external_id + "_" + str(i) + ".jpeg")
+                    image = Image.open("D:/parsing/pic/" + external_id + "_" + str(i) + ".jpeg")
+                    if image.width < 600 or image.height < 600 or pic.find(".bmp") != -1 or image.width > 2560 or image.height > 2560:
+                        if links["uncorrect"] == "":
+                            links["uncorrect"] = pic
+                        else:
+                            links["uncorrect"] += "," + pic
+                    else:
+                        if links["correct"] == "":
+                            links["correct"] = pic
+                        else:
+                            links["correct"] += "," + pic
+                if links["correct"] == "":
+                    continue
+                correct_links = list(filter(None, links["correct"].split(',')))    
+                
                 offer = et.SubElement(offers, 'offer')
-                offer.set('id', external_id.replace("-","")[:20])
+                if without_space_pic:
+                    split_link = pic_links[0].split("/")
+                    offer.set('id', split_link[6])
+                else:
+                    offer.set('id', external_id.replace("-","")[:20])
                 offer.set('available', "true")
                 name = et.SubElement(offer, 'name')
                 name.text = detail["title"]
@@ -114,39 +140,44 @@ class Yandex(Ploschadka):
                 
                 i = 0
                 if len(pic_links) > 0:
-                    for pic in pic_links:
-                        pic = pic.strip()
-                        if i <= 9:
-                            try:
+                    if without_space_pic:
+                        for link in correct_links:
+                            link = link.strip()
+                            picture = et.SubElement(offer, 'picture')
+                            picture.text = link
+                    else:
+                        for pic in pic_links:
+                            pic = pic.strip()
+                            if i <= 9:
                                 pic_size = os.stat("D:/parsing/pic/" + external_id + "_" + str(i) + ".jpeg").st_size/(1024*1024)
-                            except:
-                                wget.download(pic, "D:/parsing/pic/" + external_id + "_" + str(i) + ".jpeg")
-                                pic_size = os.stat("D:/parsing/pic/" + external_id + "_" + str(i) + ".jpeg").st_size/(1024*1024)
-                            if pic_size < 5:
-                                picture = et.SubElement(offer, 'picture')
-                                picture.text = pic
-                            elif pic_size >= 5 and len(pic_links) == 1:
-                                picture = et.SubElement(offer, 'picture') 
-                        i += 1 
+                                if pic_size < 5:
+                                    picture = et.SubElement(offer, 'picture')
+                                    picture.text = pic
+                                elif pic_size >= 5 and len(pic_links) == 1:
+                                    picture = et.SubElement(offer, 'picture')
+                            i += 1 
                 else:
                     picture = et.SubElement(offer, 'picture') 
-                
                 pickup = et.SubElement(offer, 'pickup')
                 pickup.text = "true"
                 delivery = et.SubElement(offer, 'delivery')
                 delivery.text = "true"
                 store = et.SubElement(offer, 'store')
                 store.text = "true"
-                sposobi_oplati = et.SubElement(offer, 'sales_notes')
-                sposobi_oplati.text = "Наличные, онлайн-оплата на сайте или платеж по счету."
-                dostavka = et.SubElement(offer, 'sales_notes')
-                dostavka.text = "Доставка оплачивается отдельно."
-                sroki_dostavki = et.SubElement(offer, 'sales_notes')
-                sroki_dostavki.text = "Доставим за 4 часа или отправим по всей России."
-                sposobi_dostavki = et.SubElement(offer, 'sales_notes')
-                sposobi_dostavki.text = "Доставка по регионам любой ТК: СДЭК, Деловые Линии, ПЭК, КИТ и др."
-                predoplata = et.SubElement(offer, 'sales_notes')
-                predoplata.text = "Необходима предоплата 100%."
+                if without_space_pic:
+                    sales_note = et.SubElement(offer, 'sales_notes')
+                    sales_note.text = "Наличные, онлайн-оплата на сайте или платеж по счету. Доставка оплачивается отдельно. Доставим за 4 часа или отправим по всей России. Доставка по регионам любой ТК: СДЭК, ПЭК, КИТ и др. Необходима предоплата 100%."
+                else:
+                    sposobi_oplati = et.SubElement(offer, 'sales_notes')
+                    sposobi_oplati.text = "Наличные, онлайн-оплата на сайте или платеж по счету."
+                    dostavka = et.SubElement(offer, 'sales_notes')
+                    dostavka.text = "Доставка оплачивается отдельно."
+                    sroki_dostavki = et.SubElement(offer, 'sales_notes')
+                    sroki_dostavki.text = "Доставим за 4 часа или отправим по всей России."
+                    sposobi_dostavki = et.SubElement(offer, 'sales_notes')
+                    sposobi_dostavki.text = "Доставка по регионам любой ТК: СДЭК, ПЭК, КИТ и др."
+                    predoplata = et.SubElement(offer, 'sales_notes')
+                    predoplata.text = "Необходима предоплата 100%."
                 description = et.SubElement(offer, 'description')
                 description.text = """<p>Компания ТД БОВИД являемся одним из крупнейших поставщиков в России и официальным дилером АО «Автомобильный завод «УРАЛ», ПАО</p>
                 <p>«КАМАЗ», ПАО «Автодизель», АО «ЯЗДА», ООО «УАЗ», ООО</p><p>«ИВЕКО-АМТ», ООО «Автоцентр ОСВАР», АО «Гидросила М»,</p>
@@ -162,6 +193,8 @@ class Yandex(Ploschadka):
                 kod = et.SubElement(offer, 'param')
                 kod.set("name", 'Код')
                 kod.text = detail["code"]
+                if without_space_pic:
+                    continue
                 count = et.SubElement(offer, 'count')
                 count.text = str(amount)
             

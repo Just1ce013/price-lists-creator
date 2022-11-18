@@ -746,15 +746,15 @@ def main():
 def test():
     start = datetime.now()
     aa = AA("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_autopiter.xlsx", fields_for_autopiter)
-    aa.get_xlsx()    
+    aa.get_xlsx() 
+    avito = Avito("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_avito.xlsx", fields_for_avito)
+    avito.get_xlsx()   
     gis = TwoGis("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_2gis.xlsx", fields_for_2gis)
     gis.get_xlsx()
     zzap = ZZap("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_zzap.xlsx", fields_for_zzap)
-    zzap.get_xlsx()    
-    avito = Avito("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_avito.xlsx", fields_for_avito)
-    avito.get_xlsx()
-    cfk = Cfk("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_cfkPrice.xlsx", 
-              "D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_cfkLeftover.xlsx", 
+    zzap.get_xlsx()
+    cfk = Cfk("D:/parsing/Цены_" + today[2] + '_' + today[1] + '_' + today[0][2:] + ".xlsx", 
+              "D:/parsing/Остатки_" + today[2] + '_' + today[1] + '_' + today[0][2:] + ".xlsx", 
               fields_for_cfk_price, fields_for_cfk_leftover)
     cfk.get_xlsx()
     drom = Drom("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_drom.xlsx", fields_for_drom)
@@ -767,8 +767,8 @@ def test():
     yandex.get_xml(False)
     yandex_direct = Yandex("D:/parsing/yandex_direct.xml")
     yandex_direct.get_xml(True)
-    yandex.get_published_count()
-    yandex.download_images()
+    yandex_direct.get_published_count()
+    yandex_direct.download_images()
     total = (datetime.now() - start).total_seconds()
     print("Общее время - " + str(int(total//3600)) + ":" + str(int((total % 3600)//60)) + ":" + str(round(total % 60)))
 

@@ -45,7 +45,7 @@ class SPL(Ploschadka):
                 nalichie = 0
                 for el in detail["storage"]:
                     amount = str(el["amount"])
-                    if el["namestorage"] == "г.Челябинск, ул.Линейная, 98":
+                    if el["namestorage"] == "г. Челябинск, ул.Линейная, 98":
                         if amount[0] != "-":
                             if amount.find("\xa0") > 0:
                                 nalichie += round(float(amount[:amount.find("\xa0")]))

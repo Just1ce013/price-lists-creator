@@ -61,14 +61,14 @@ class Ploschadka:
     def pic_links(self, imgs):
         pic_links = ""
         if len(imgs) > 0:
-            count = len(imgs)/3
             for el in imgs:
                 if el["url"].find("small") == -1 and el["url"].find("medium") == -1:
-                    url = self.BASE_URL + el["url"]
-                    pic_links += url
-                    if count > 1:
-                        pic_links += ", "
-                        count = count - 1
+                    if pic_links == "":
+                        url = self.BASE_URL + el["url"]
+                        pic_links += url
+                    else:
+                        url = self.BASE_URL + el["url"]
+                        pic_links += ", " + url
         return pic_links     
     
     
