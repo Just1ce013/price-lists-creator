@@ -7,7 +7,7 @@ class AA(Ploschadka):
     fail_articles = ["34А-71-11611", "353398917с (16284016)", "ШД 1,2 (15972146)", 
                      "ПП (15972167)", "ТСС-140 392440 (15592572)", "ТСС-100 392400 (15592415)", 
                      "СВ000011441 (15548235)", "3ЕВ-04-32410", "А810180/LA810180", "195-78-21331 НХ", 
-                     "34А-28-00110", "КГК №7"]
+                     "34А-28-00110", "КГК №7", "3ЕВ-04-32410 ", "Лк-00002357 (16084887)", "ПСТ-200 ", "ПСТ-200"]
 
     def __init__(self, filename, fields):
         self.__filename = filename
@@ -59,9 +59,16 @@ class AA(Ploschadka):
                     vendor = "УРАЛАЗ"
                 if vendor == "ГАЗ грузовой" or vendor == "ГАЗ легковой":
                     vendor = "ГАЗ"
+                end = len(detail["article"])
+                if detail["article"].find("(") > -1:
+                    end = detail["article"].find("(")
+                elif detail["article"].find(")") > -1:
+                    end = detail["article"].find(")")
+                elif detail["article"].find(",") > -1:
+                    end = detail["article"].find(",")
                 self.data.append([
                     vendor,
-                    detail["article"],
+                    detail["article"][:end],
                     title,
                     detail["price"],
                     nalichie

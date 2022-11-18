@@ -101,7 +101,16 @@ class Rees46(Ploschadka):
                 detail_locations = et.SubElement(offer, 'locations')
                 for key in store.keys():
                     detail_location = et.SubElement(detail_locations, 'location')
-                    detail_location.set('id', str(self.addresses.index(key) + 1))
+                    if key == "г. Челябинск, ул.Линейная, 98":
+                        detail_location.set('id', str(self.addresses.index("г.Челябинск, ул.Линейная, 98") + 1))
+                    elif key == "г. Магнитогорск, ул.Заводская, 1/2":
+                        detail_location.set('id', str(self.addresses.index("г.Магнитогорск, ул.Заводская, 1/2") + 1))
+                    elif key == "г. Челябинск, Троицкий тр., 66":
+                        detail_location.set('id', str(self.addresses.index("г.Челябинск, Троицкий тр., 66") + 1))
+                    elif key == "г. Магнитогорск, ул.Кирова, 100":
+                        detail_location.set('id', str(self.addresses.index("г.Магнитогорск, ул.Кирова, 100") + 1))
+                    else:
+                        detail_location.set('id', str(self.addresses.index(key) + 1))    
                     stock_quantity = et.SubElement(detail_location, 'stock_quantity')
                     stock_quantity.text = str(store.get(key))
                 pic_linki = list(filter(None, self.pic_links(detail["images"]).split(',')))
