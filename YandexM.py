@@ -1,10 +1,9 @@
 from OOP import Ploschadka
 import xlsxwriter as xl
-from datetime import date
 
 
-class TwoGis(Ploschadka):
-    
+class YandexMarket(Ploschadka):
+# "uid", "Наименование", "Ссылки на фото", "Описание", "Категория", "Бренд", "Штрихкод", "Артикул", "Цена"    
     def __init__(self, filename, fields):
         self.__filename = filename
         self.__fields = fields
@@ -31,12 +30,7 @@ class TwoGis(Ploschadka):
                     continue
                 if len(detail["storage"]) == 0:
                     continue 
-                if len(detail["storage"]) == 1:
-                    if detail["storage"][0]["idstorage"] == "":
-                        continue
-                category = list(filter(None, detail["uri"].split('/')))[1]
-                if category not in self.category_names.keys():
-                    continue
+                
                 nalichie = 0
                 for el in detail["storage"]:
                     amount = str(el["amount"])
@@ -52,20 +46,49 @@ class TwoGis(Ploschadka):
                 
                 links = self.pic_links(detail["images"])
                 
+                if links == "":
+                    continue
+                
                 self.data.append([
-                    str(date.today()),
-                    self.category_names[category],
-                    detail["article"],
-                    self.BASE_URL + detail["uri"],
-                    detail["title"],
-                    detail["code"],
                     detail["external_id"],
                     detail["title"],
-                    detail["price"],
-                    nalichie,
-                    links    
+                    links,
+                    detail["title"],
+                    detail["grouptitle"],
+                    detail["grouptitle"],
+                    self.create_EAN13(detail["code"]),
+                    detail["article"],
+                    detail["price"]
                 ])
                 
             start += limit
         
-        super().get_xlsx("2Gis")
+        super().get_xlsx("YandexMarket")
+        
+        
+    def create_EAN13(self, detail_code):
+        EAN13 = ""
+        for sign in detail_code:
+            if sign.isalpha():
+                EAN13 = EAN13 + str(ord(sign))
+            else:
+                EAN13 = EAN13 + str(sign)
+        while len(EAN13) < 11:
+            EAN13 = "0" + EAN13
+        EAN13 = "1" + EAN13
+        index = 0
+        chetnie = 0
+        nechetnie = 0
+        for i in EAN13:
+            if index in (1,3,5,7,9,11):
+                chetnie += int(i)
+            else:
+                nechetnie += int(i)
+            index += 1
+        result = chetnie * 3 + nechetnie
+        if result % 10 != 0:
+            thirteen_char = 10 - (result % 10)
+        else:
+            thirteen_char = 0
+        EAN13 = EAN13 + str(thirteen_char)
+        return EAN13

@@ -125,10 +125,7 @@ def yandex_old(from_db):
             predoplata = et.SubElement(offer, 'sales_notes')
             predoplata.text = "Необходима предоплата 100%."
             description = et.SubElement(offer, "description")
-            description.text = """<p>Компания ТД БОВИД являемся одним из крупнейших поставщиков в России и официальным дилером АО «Автомобильный завод «УРАЛ», ПАО</p>
-            <p>«КАМАЗ», ПАО «Автодизель», АО «ЯЗДА», ООО «УАЗ», ООО</p><p>«ИВЕКО-АМТ», ООО «Автоцентр ОСВАР», АО «Гидросила М»,</p>
-            <p>представителем 35 отечественных заводов-изготовителей, а также</p>
-            <p>IVECO, VOLVO, RENAULT TRUCKS и спецтехнике KOMATSU, HITACHI, </p><p>CATERPILLAR.</p>"""
+            description.text = """Большой выбор запчастей по рыночным ценам в наличии. Доставка в любой город."""
             proizvoditel = et.SubElement(offer, "param")
             proizvoditel.set("name", "Производитель")
             proizvoditel.text = el[4]

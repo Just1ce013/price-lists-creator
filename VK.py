@@ -1,10 +1,9 @@
 from OOP import Ploschadka
 import xlsxwriter as xl
-from datetime import date
 
 
-class TwoGis(Ploschadka):
-    
+class VK(Ploschadka):
+# "Название", "Цена", "Описание", "Фото"    
     def __init__(self, filename, fields):
         self.__filename = filename
         self.__fields = fields
@@ -31,12 +30,7 @@ class TwoGis(Ploschadka):
                     continue
                 if len(detail["storage"]) == 0:
                     continue 
-                if len(detail["storage"]) == 1:
-                    if detail["storage"][0]["idstorage"] == "":
-                        continue
-                category = list(filter(None, detail["uri"].split('/')))[1]
-                if category not in self.category_names.keys():
-                    continue
+                
                 nalichie = 0
                 for el in detail["storage"]:
                     amount = str(el["amount"])
@@ -52,20 +46,16 @@ class TwoGis(Ploschadka):
                 
                 links = self.pic_links(detail["images"])
                 
+                if links == "":
+                    continue
+                
                 self.data.append([
-                    str(date.today()),
-                    self.category_names[category],
-                    detail["article"],
-                    self.BASE_URL + detail["uri"],
-                    detail["title"],
-                    detail["code"],
-                    detail["external_id"],
                     detail["title"],
                     detail["price"],
-                    nalichie,
-                    links    
+                    detail["title"],
+                    links
                 ])
                 
             start += limit
         
-        super().get_xlsx("2Gis")
+        super().get_xlsx("VK")

@@ -38,7 +38,10 @@ class Cfk(Ploschadka):
                 if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
                     continue
                 if len(detail["storage"]) == 0:
-                    continue 
+                    continue
+                if len(detail["storage"]) == 1:
+                    if detail["storage"][0]["idstorage"] == "":
+                        continue
                 vendor_in_url = list(filter(None, detail["uri"].split('/')))[1]
                 if vendor_in_url in self.category_names.keys():
                     vendor = self.category_names[vendor_in_url]

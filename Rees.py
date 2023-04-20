@@ -11,10 +11,10 @@ class Rees46(Ploschadka):
                 "Поршневая группа Мотордеталь": 21, "Поршневая группа Украина": 22, "Прицепы": 23, "Прочие": 24, "РВД": 25, "Радиаторы ЛРЗ": 26, "Т-150": 27, "Т-170": 28, "Т-40": 29, "УАЗ": 30, 
                 "УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370": 31, "Урал": 32, "Фильтры и комплекты прокладок МОТОРДЕТАЛЬ": 33, "ШААЗ": 34, "Экскаватор": 35, "Электрооборудование": 36, "ЮМЗ": 37, "ЯМЗ": 38, "CAT": 39, "HYUNDAI": 40, 
                 "Hitachi": 41, "IVECO": 42, "KOMATSU": 43}
-    addresses = ["г.Челябинск, ул.Линейная, 98", "г.Челябинск, Троицкий тр., 66",
-             "г.Магнитогорск, ул.Заводская, 1/2", "г.Магнитогорск, ул.Кирова, 100", 
-             "г.Красноярск, ул. 2-я Брянская, 34, стр. 2", "г. Алдан, ул. Комсомольская, 19Б",
-             "Склад IVECO автосервис", "г.Бодайбо, ул. Артема Сергеева, 9А"]
+    addresses = {"г.Челябинск,ул.Линейная,98" : "г.Челябинск, ул.Линейная,98", "г.Челябинск,Троицкийтр.,66" : "г.Челябинск, Троицкий тр.,66",
+             "г.Магнитогорск,ул.Заводская,1/2" : "г.Магнитогорск, ул.Заводская,1/2", "г.Магнитогорск,ул.Кирова,100" : "г.Магнитогорск, ул.Кирова,100", 
+             "г.Красноярск,ул.2-яБрянская,34,стр.2" : "г.Красноярск, ул.2-я Брянская,34,стр.2", "г.Алдан,ул.Комсомольская,19Б" : "г.Алдан, ул.Комсомольская,19Б",
+             "СкладIVECOавтосервис" : "Склад IVECO автосервис", "г.Бодайбо,ул.АртемаСергеева,9А" : "г.Бодайбо, ул. Артема Сергеева,9А"}
     
     def __init__(self, filename):
         self.__filename = filename
@@ -45,7 +45,7 @@ class Rees46(Ploschadka):
         locations = et.SubElement(shop, 'locations')
         for address in self.addresses:
             location = et.SubElement(locations, 'location')
-            location.set('id', str(self.addresses.index(address) + 1))
+            location.set('id', str(list(self.addresses.keys()).index(address) + 1))
             location.set('type', "store")
             location.set('name', address)
         offers = et.SubElement(shop, 'offers')
@@ -60,19 +60,24 @@ class Rees46(Ploschadka):
                     continue
                 if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
                     continue
+                if len(detail["storage"]) == 1:
+                    if detail["storage"][0]["idstorage"] == "":
+                        continue
                 store = {}
                 nalichie = 0
                 for storage in detail["storage"]:
                     amount = str(storage["amount"])
+                    if storage["namestorage"] == "Складпоставщика":
+                        continue
                     if amount[0] == "-":
-                        store[storage["namestorage"]] = 0
+                        store[storage["namestorage"].replace(" ", "")] = 0
                         continue
                     if amount.find("\xa0") > 0:
                         count = round(float(amount[:amount.find("\xa0")]))
-                        store[storage["namestorage"]] = count
+                        store[storage["namestorage"].replace(" ", "")] = count
                     else:
                         count = round(float(amount.replace(',','.')))
-                        store[storage["namestorage"]] = count
+                        store[storage["namestorage"].replace(" ", "")] = count
                     nalichie += count    
                 if nalichie == 0 or nalichie == 0.0 or str(nalichie) == "":
                     continue
@@ -100,19 +105,12 @@ class Rees46(Ploschadka):
                 categoryId.text = str(self.category_ids[detail_category])
                 detail_locations = et.SubElement(offer, 'locations')
                 for key in store.keys():
+                    if key == "Складпоставщика":
+                        continue
                     detail_location = et.SubElement(detail_locations, 'location')
-                    if key == "г. Челябинск, ул.Линейная, 98":
-                        detail_location.set('id', str(self.addresses.index("г.Челябинск, ул.Линейная, 98") + 1))
-                    elif key == "г. Магнитогорск, ул.Заводская, 1/2":
-                        detail_location.set('id', str(self.addresses.index("г.Магнитогорск, ул.Заводская, 1/2") + 1))
-                    elif key == "г. Челябинск, Троицкий тр., 66":
-                        detail_location.set('id', str(self.addresses.index("г.Челябинск, Троицкий тр., 66") + 1))
-                    elif key == "г. Магнитогорск, ул.Кирова, 100":
-                        detail_location.set('id', str(self.addresses.index("г.Магнитогорск, ул.Кирова, 100") + 1))
-                    else:
-                        detail_location.set('id', str(self.addresses.index(key) + 1))    
+                    detail_location.set('id', str(list(self.addresses.keys()).index(key) + 1))    
                     stock_quantity = et.SubElement(detail_location, 'stock_quantity')
-                    stock_quantity.text = str(store.get(key))
+                    stock_quantity.text = self.addresses[key]
                 pic_linki = list(filter(None, self.pic_links(detail["images"]).split(',')))
                 if len(pic_linki) > 0:
                     for pic in pic_linki:

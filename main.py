@@ -20,9 +20,13 @@ URL = 'https://tdbovid.ru/katalog_zapchastej'
 BASE_URL = 'https://tdbovid.ru'
 today = str(date.today()).split('-')
 filename = 'tdbovid_' + today[2] + '_' + today[1] + '_' + today[0][2:] + '_2gis.db'
-tdbovid_adapter = HTTPAdapter(max_retries=10)
+tdbovid_adapter = HTTPAdapter(max_retries=50)
 session = requests.Session()
 session.mount(BASE_URL, tdbovid_adapter)
+addresses = ["г.Челябинск,ул.Линейная,98", "г.Челябинск,Троицкийтр.,66",
+             "г.Магнитогорск,ул.Заводская,1/2", "г.Магнитогорск,ул.Кирова,100", 
+             "г.Красноярск,ул.2-яБрянская,34,стр.2", "г.Алдан,ул.Комсомольская,19Б",
+             "СкладIVECOавтосервис", "г.Бодайбо,ул.АртемаСергеева,9А"]
 
 def pic_link(links):
     length = len(links)
@@ -64,33 +68,34 @@ def get_item(elem):
         imgs = []
         item_url = BASE_URL + i.find('a').get('href')
         item_page = get_page(item_url)
+        name = i.find('a', class_="col-lg-3").text.strip()
         try:
             uid = item_page.find('meta', attrs={'name':'uid'}).get('content')
-        except Exception as exc:
-            print(exc)
-            print(item_url)
+        except Exception:
+            print(str(item_url) + " ошибка с uid!")
+            uid = name
         pics = item_page.find_all('a',href=re.compile('jpg'))
         for pic in pics:
             imgs.append(pic.get('href'))              
         
         print("Количество изображений - " + str(len(imgs)))
         
-        # if len(imgs) > 0:
-        #     for el in imgs:
-        #         if el is not None and el.split('/')[-1] == '_noimage_300x300_3dd.jpg':
-        #             el = None
+        if len(imgs) > 0:
+            for el in imgs:
+                if el is not None and el.split('/')[-1] == '_noimage_300x300_3dd.jpg':
+                    el = None
             
         download = []
         start = 0
         
-        if not os.path.exists('D:/parsing/pic/' + uid + '_0.jpeg') and len(imgs) > 0:
+        if not os.path.exists('D:/parsing/pics/' + uid + '_0.jpeg') and len(imgs) > 0:
             # if len(imgs) > 0:
             for el in imgs:
                 download.append(el)
         elif len(imgs) > 1:
             start = 1
             for e in range(1, len(imgs)):
-                if os.path.exists('D:/parsing/pic/' + uid + '_' + str(e) + '.jpeg'):
+                if os.path.exists('D:/parsing/pics/' + uid + '_' + str(e) + '.jpeg'):
                     if imgs[e] != imgs[len(imgs)-1]:
                         start += 1
                     else:
@@ -104,20 +109,35 @@ def get_item(elem):
             for k in range(start, len(imgs)):
                 #download.append(imgs[k])
                 print(BASE_URL + imgs[k])
-                wget.download(BASE_URL + imgs[k], 'D:/parsing/pic/' + uid + '_' + str(k) + '.jpeg')
+                wget.download(BASE_URL + imgs[k], 'D:/parsing/pics/' + uid + '_' + str(k) + '.jpeg')
         
-        # for el in download:
-        #     print(BASE_URL + el)
-        #     wget.download(BASE_URL + el, 'D:/parsing/pic/' + uid + '_' + str(download.index(el)) + '.jpeg') 
+        for el in download:
+            print(BASE_URL + el)
+            wget.download(BASE_URL + el, 'D:/parsing/pics/' + uid + '_' + str(download.index(el)) + '.jpeg') 
                     
         # получаем список складов с остатками
-        item_stores = item_page.find('table').find_all('tr')
+        try:
+            item_stores = item_page.find('table').find_all('tr')
+        except Exception:
+            item_stores = []
+            print(str(item_url) + " - косяк с табличкой наличия!")    
         stores = {}
-        for j in item_stores:
-            print(j.find_all('td')[0].text.strip())
-            print(j.find_all('td')[1].text.replace('шт.', '').strip())
-            stores[j.find_all('td')[0].text.strip()] = int(j.find_all('td')[1].text.replace('шт.', '').strip())              
-        
+        nalichie = 0.0
+        if len(item_stores) > 0:
+            for j in item_stores:
+                print(j.find_all('td')[0].text.strip())
+                print(j.find_all('td')[1].text.replace('шт.', '').strip())
+                try:
+                    stores[j.find_all('td')[0].text.strip()] = int(j.find_all('td')[1].text.replace('шт.', '').strip())              
+                    nalichie += float(j.find_all('td')[1].text.replace('шт.', '').replace(",", ".").strip())
+                except Exception:
+                    print(str(item_url) + " косяк с наличием")
+        else:
+            stores["г.Челябинск, ул.Линейная, 98"] = 0
+            stores["г.Челябинск, Троицкий тр., 66"] = 0
+            stores["г.Магнитогорск, ул.Кирова, 100"] = 0
+            stores["г.Магнитогорск, ул.Заводская, 1/2"] = 0
+            stores["г.Красноярск, ул. 2-я Брянская, 34, стр. 2"] = 0
         # Добавлены поля item_url и description. В description "копируется" поле name. Поле marka переименовано в category.
         item.append({
                     'category': elem['category'],
@@ -126,9 +146,9 @@ def get_item(elem):
                     'description': i.find('a', class_="col-lg-3").text.strip(),
                     'kod': i.find('a', class_="col-lg-1").text.strip(),
                     'uid': uid,
-                    'name': i.find('a', class_="col-lg-3").text.strip(),
+                    'name': name,
                     'price': None if  i.find('span').text.strip().replace(' ', '') == 'Уточняйтеуменеджера' else float(i.find('span').text.strip().replace(' ', '').replace('₽', '')),
-                    'nalichie': int(re.search( r'\d+', i.find('button', type="button").text.replace('\xa0', '').strip()).group()),
+                    'nalichie': nalichie if nalichie > 0.0 else "Уточняйтеуменеджера",
                     'baza_store' : stores.get('г.Челябинск, ул.Линейная, 98'),
                     'tr_tr_store' : stores.get('г.Челябинск, Троицкий тр., 66'),
                     'm_kir_store' : stores.get('г.Магнитогорск, ул.Кирова, 100'),
@@ -142,18 +162,18 @@ def get_item(elem):
     c.execute('PRAGMA encoding = "UTF-8"')
     while True:
         try:
-            c.execute("CREATE TABLE IF NOT EXISTS tdbovid(date DATE, category VARCHAR(255), artikl VARCHAR(255), item_url VARCHAR(255), description VARCHAR(255), kod VARCHAR(255), uid VARCHAR(255) UNIQUE,  name VARCHAR(255), price REAL, nalichie INT, baza_store INT, tr_tr_store INT, m_kir_store INT, m_zav_store INT, kr_store INT, pic_link VARCHAR(255))")
+            c.execute("CREATE TABLE IF NOT EXISTS tdbovid(date DATE, category VARCHAR(255), artikl VARCHAR(255), item_url VARCHAR(255), description VARCHAR(255), kod VARCHAR(255), name VARCHAR(255), price REAL, nalichie INT, baza_store INT, tr_tr_store INT, m_kir_store INT, m_zav_store INT, kr_store INT, pic_link VARCHAR(255))")
             break
         except:
             time.sleep(random.randint(3, 20))
             
     for i in item:
         try:
-            c.execute('INSERT INTO tdbovid VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (datetime.now().date(), i['category'], i['artikl'], i['item_url'], i['description'], i['kod'], i['uid'], i['name'], i['price'], i['nalichie'], i[ 'baza_store'], i['tr_tr_store'], i['m_kir_store'], i['m_zav_store'], i['kr_store'], i['pic_link']))
+            c.execute('INSERT INTO tdbovid VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (datetime.now().date(), i['category'], i['artikl'], i['item_url'], i['description'], i['kod'], i['name'], i['price'], i['nalichie'], i[ 'baza_store'], i['tr_tr_store'], i['m_kir_store'], i['m_zav_store'], i['kr_store'], i['pic_link']))
             conn.commit()
         except Exception as err:
             print('Ошибка!')
-            print('uid - ', i['uid'])
+            # print('uid - ', i['uid'])
             print(err)
     
     conn.close()
@@ -193,7 +213,6 @@ def update_database():
     c.execute("UPDATE tdbovid SET sales = False where sales IS NULL")
     conn.commit()
     c.execute("DELETE FROM tdbovid where sales is True")
-    c.execute("DELETE FROM tdbovid where baza_store = 0 and tr_tr_store = 0 and m_kir_store = 0 and m_zav_store = 0 and kr_store = 0")
     final_count = c.execute("select count(*) from tdbovid").fetchall()[0][0]
     print("Количество номенклатуры - "+ str(final_count) + " шт.")
     conn.commit()
@@ -242,7 +261,7 @@ def final_databases(filepaths):
         c.execute("ALTER TABLE tdbovid DROP COLUMN item_url")
         c.execute("ALTER TABLE tdbovid DROP COLUMN date")
         c.execute("ALTER TABLE tdbovid DROP COLUMN sales")
-        c.execute("ALTER TABLE tdbovid DROP COLUMN uid")
+        # c.execute("ALTER TABLE tdbovid DROP COLUMN uid")
         c.execute("ALTER TABLE tdbovid RENAME COLUMN category TO marka")
         conn.commit()
         conn.close()
@@ -328,18 +347,19 @@ def save_to_xlsx(base):
 
 def main():    
     start = datetime.now()
-    all_links = get_catalog(get_page(URL))        
-    with ThreadPool(25) as pool:
-        pool.map(download_images, all_links)
+    all_links = get_catalog(get_page(URL))
+    print(all_links)
+    print(len(all_links))        
+    with ThreadPool(15) as pool:
         pool.map(get_item, all_links)
     update_database()
-    filepaths = copy_databases()
-    xlsx_bases = ["2gis", "drom", "spl"]
-    final_databases(filepaths) 
-    for el in xlsx_bases:
-        save_to_xlsx(filepaths.get(el))
-    with_sales.main()
-    yandex_market.main()
+    # filepaths = copy_databases()
+    # xlsx_bases = ["2gis", "drom", "spl"]
+    # final_databases(filepaths) 
+    # for el in xlsx_bases:
+    #     save_to_xlsx(filepaths.get(el))
+    # with_sales.main()
+    # yandex_market.main()
     obzhee = (datetime.now() - start).total_seconds()
     print("Общее время - " + str(int(obzhee//3600)) + ":" + str(int((obzhee % 3600)//60)) + ":" + str(round(obzhee % 60)))
 
@@ -359,8 +379,8 @@ def download_images(elem):
         item_page = get_page(item_url)
         try:
             uid = item_page.find('meta', attrs={'name':'uid'}).get('content')
-        except Exception as exc:
-            print(exc + item_url)
+        except Exception:
+            print(item_url)
             
         pics = item_page.find_all('a',href=re.compile('jpg'))             
         print("Количество изображений - " + str(len(pics)))

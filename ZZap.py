@@ -30,7 +30,9 @@ class ZZap(Ploschadka):
                     continue
                 if len(detail["storage"]) == 0:
                     continue 
-                
+                if len(detail["storage"]) == 1:
+                    if detail["storage"][0]["idstorage"] == "":
+                        continue
                 category = list(filter(None, detail["uri"].split('/')))[1]
                 if category not in self.category_names.keys():
                     continue
@@ -39,14 +41,14 @@ class ZZap(Ploschadka):
                 nalichie = 0
                 for el in detail["storage"]:
                     amount = str(el["amount"])
-                    if el["namestorage"] == "г. Челябинск, ул.Линейная, 98":
+                    if el["namestorage"].replace(" ", "") == "г.Челябинск,ул.Линейная,98":
                         if amount[0] != "-":
                             if amount.find("\xa0") > 0:
                                 nalichie += round(float(amount[:amount.find("\xa0")]))
-                                store[el["namestorage"]] = nalichie
+                                store[el["namestorage"].replace(" ", "")] = nalichie
                             else:
                                 nalichie += round(float(amount.replace(",",".")))
-                                store[el["namestorage"]] = nalichie
+                                store[el["namestorage"].replace(" ", "")] = nalichie
                 if nalichie == 0:
                     continue
                 

@@ -30,30 +30,31 @@ class Drom(Ploschadka):
                     continue
                 if len(detail["storage"]) == 0:
                     continue 
-                
+                if len(detail["storage"]) == 1:
+                    if detail["storage"][0]["idstorage"] == "":
+                        continue
                 category = list(filter(None, detail["uri"].split('/')))[1]
                 if category not in self.category_names.keys():
                     continue
-                
                 store = {}
                 nalichie = 0
                 for el in detail["storage"]:
                     amount = str(el["amount"])
                     if amount[0] == "-":
-                        store[el["namestorage"]] = 0
+                        store[el["namestorage"].replace(" ", "")] = 0
                         continue
                     if amount.find("\xa0") > 0:
                         count = round(float(amount[:amount.find("\xa0")]))
-                        if el["namestorage"] in store.keys():
-                            store[el["namestorage"]] += count
+                        if el["namestorage"].replace(" ", "") in store.keys():
+                            store[el["namestorage"].replace(" ", "")] += count
                         else:
-                            store[el["namestorage"]] = count
+                            store[el["namestorage"].replace(" ", "")] = count
                     else:
                         count = round(float(amount.replace(',','.')))
-                        if el["namestorage"] in store.keys():
-                            store[el["namestorage"]] += count
+                        if el["namestorage"].replace(" ", "") in store.keys():
+                            store[el["namestorage"].replace(" ", "")] += count
                         else:
-                            store[el["namestorage"]] = count
+                            store[el["namestorage"].replace(" ", "")] = count
                     nalichie += count 
                 if nalichie == 0:
                     continue
@@ -68,11 +69,11 @@ class Drom(Ploschadka):
                     detail["title"],
                     detail["price"],
                     nalichie,
-                    store.get("г. Челябинск, ул.Линейная, 98", 0),
-                    store.get("г.Челябинск, Троицкий тр., 66", 0),
-                    store.get("г.Магнитогорск, ул.Кирова, 100", 0),
-                    store.get("г.Магнитогорск, ул.Заводская, 1/2", 0),
-                    store.get("г.Красноярск, ул. 2-я Брянская, 34, стр. 2", 0),
+                    store.get("г.Челябинск,ул.Линейная,98", 0),
+                    store.get("г.Челябинск,Троицкийтр.,66", 0),
+                    store.get("г.Магнитогорск,ул.Кирова,100", 0),
+                    store.get("г.Магнитогорск,ул.Заводская,1/2", 0),
+                    store.get("г.Красноярск,ул.2-яБрянская,34,стр.2", 0),
                     links
                 ])
                 

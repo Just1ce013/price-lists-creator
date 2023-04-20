@@ -71,6 +71,9 @@ class Yandex(Ploschadka):
                     continue
                 if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
                     continue
+                if len(detail["storage"]) == 1:
+                    if detail["storage"][0]["idstorage"] == "":
+                        continue
                 for el in detail["storage"]:
                     if el["namestorage"] == "г.Челябинск, ул.Линейная, 98" or el["namestorage"] == "г. Челябинск, ул.Линейная, 98":
                         str_amount = str(el["amount"])

@@ -18,6 +18,9 @@ from Avito import Avito
 from AA import AA
 from Yandex import Yandex
 from Cfk import Cfk
+from YandexM import YandexMarket
+from VK import VK
+from Autoalpha import AutoAlpha
 
 
 category_names = {"ural":"Урал","ural-63685-636746563-dorozhnaya-gamma-i-ural-6370":"УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370",
@@ -49,13 +52,15 @@ fields_for_cfk_leftover = ["IDТовара", "Наименование", "IDСк
 fields_for_zzap = ["Производитель", "Номер производителя", "Наименование", "Цена", "Количество", "Срок поставки", "Ссылка на фото запчасти"]
 fields_for_avito = ["Id", "ListingFree", "AdStatus", "AllowEmail", "ManagerName", "ContactPhone", 
                         "Address", "DisplayAreas", "Category", "TypeId", "AdType", "Title", "Description", 
-                        "Price", "Condition", "OEM","ImageUrls"]  
+                        "Price", "Condition", "OEM","ImageUrls", "Stock"]  
 fields_for_drom = ["marka", "artikl", "description", "kod", "name", "price", 
                         "nalichie", "baza_store", "tr_tr_store", "m_kir_store", 
                         "m_zav_store", "kr_store", "pic_link"]
 fields_for_2gis = ["date", "category", "artikl", "item_url", "description", "kod", 
-                       "uid", "name", "price", "nalichie", "baza_store", "tr_tr_store", 
-                       "m_kir_store", "m_zav_store", "kr_store", "pic_link"]
+                       "uid", "name", "price", "nalichie", "pic_link"]
+fields_for_YandexM = ["uid", "Наименование", "Ссылки на фото", "Описание", "Категория", "Бренд", "Штрихкод", "Артикул", "Цена"]
+field_for_VK = ["Название", "Цена", "Описание", "Фото"]
+fields_for_autoAlpha = ["Производитель", "Артикул", "Наименование", "Цена", "Остатки"]
 addresses = ["г.Челябинск, ул.Линейная, 98", "г.Челябинск, Троицкий тр., 66",
              "г.Магнитогорск, ул.Заводская, 1/2", "г.Магнитогорск, ул.Кирова, 100", 
              "г.Красноярск, ул. 2-я Брянская, 34, стр. 2", "г. Алдан, ул. Комсомольская, 19Б",
@@ -430,7 +435,12 @@ def rees46_xml():
                 
 
 def sberMarket_xls():
-    fields = ["id", "Доступность товара", "Категория", "Производитель", "Артикул", "Модель", "Название", "Цена", "Остаток", "НДС", "Ссылки на картинки"]
+    fields = ["id", "Доступность товара", "Категория", "Производитель", "Артикул", "Модель", "Название", "Цена", "Старая цена", "Остаток", "НДС", "Штрихкод", "Ссылки на картинки"]
+    artikuli = ["4320Я2-2220076", "4320Я3-1109044", "432007-1303027", "375-4224017-03", "375-2304093-Б1", "375-4224120-Ж", "4320-1802039", 
+                "377-6105013-01", "375-1802023-В", "4320Х-3506045/АИ-3506045", "ПЖД30-1015200-03", "375-6106111", "377-6105012-01", 
+                "4320-3515068", "4320-1108022-01", "339640 П52", "375-2403058", "4320Ф-6105150", "353-8402680\2", "332710 П29", "432001-1101002", 
+                "5557-2905410", "6361-1602510", "375-3124094", "377-6105083-02", "30.5001010", "ФР8150-1/АИ-1108010", "55571-3507050", 
+                "330-6105233", "4320-3513050"]
     start = 0
     limit = 1000
     workbook = xl.Workbook("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_sber.xlsx")
@@ -448,7 +458,9 @@ def sberMarket_xls():
                 continue
             if detail["code"] == None or detail["code"] == "":
                 continue
-            if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
+            # if detail["article"] == None or detail["article"] == "" or detail["article"].find("...") > 0:
+            #     continue
+            if detail["article"] not in artikuli:
                 continue
             if len(detail["storage"]) == 0:
                 continue 
@@ -467,13 +479,12 @@ def sberMarket_xls():
                 continue 
             for el in detail["storage"]:
                 amount = str(el["amount"])
-                if el["codestorage"] == "00006" or el["codestorage"] == "00008":
-                    if amount[0] != "-":
-                        if amount.find("\xa0") > 0:
-                            count = round(int(amount[:amount.find("\xa0")]))
-                            nalichie += count
-                        else:
-                            nalichie += el["amount"]
+                if amount[0] != "-":
+                    if amount.find("\xa0") > 0:
+                        count = round(int(amount[:amount.find("\xa0")]))
+                        nalichie += count
+                    else:
+                        nalichie += el["amount"]
             if nalichie == 0:
                 continue
             price = detail["price"] * 1.05
@@ -489,8 +500,10 @@ def sberMarket_xls():
                     title,
                     title,
                     price,
+                    "",
                     nalichie,
                     20,
+                    "",
                     links
                 ])
         start += limit
@@ -499,19 +512,19 @@ def sberMarket_xls():
 def sber_shablon():
     start = 0
     limit = 1000
-    data = []
-    fields = ["Offer_id", "GTIN", "Name", "Vendor", "Code", "URL main photo", 
-              "URL photo 2", "URL photo 3", "URL photo 4", "URL photo 5", 
-              "URL photo 6", "URL photo 7", "URL photo 8", "URL photo 9", 
-              "URL photo 10", "Article"]
-    workbook = xl.Workbook("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_sberShablon.xlsx")
-    worksheet = workbook.add_worksheet()
-    write_column_names(worksheet, fields)
+    # data = []
+    # fields = ["Offer_id", "GTIN", "Name", "Vendor", "Code", "URL main photo", 
+    #           "URL photo 2", "URL photo 3", "URL photo 4", "URL photo 5", 
+    #           "URL photo 6", "URL photo 7", "URL photo 8", "URL photo 9", 
+    #           "URL photo 10", "Article"]
+    # workbook = xl.Workbook("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_sberShablon.xlsx")
+    # worksheet = workbook.add_worksheet()
+    # write_column_names(worksheet, fields)
     while True:
         details = session.get(f"http://tdbovid.ru:3500/api/position?start={start}&limit={limit}").json()
         if len(details) == 0:
-            write_data(worksheet, 1, data, len(fields))
-            workbook.close()
+            # write_data(worksheet, 1, data, len(fields))
+            # workbook.close()
             break
         for detail in details:
             if detail["searchable"] == 0 or detail["published"] == 0:
@@ -555,28 +568,35 @@ def sber_shablon():
                     other_photos.append(BASE_URL + pic["url"])
             while len(other_photos) < 9:
                 other_photos.append("")
-            data.append([
-                detail["id"],
-                create_EAN13(str(detail["id"])),
-                title,
-                vendor,
-                detail["code"],
-                main_photo,
-                other_photos[0],
-                other_photos[1],
-                other_photos[2],
-                other_photos[3],
-                other_photos[4],
-                other_photos[5],
-                other_photos[6],
-                other_photos[7],
-                other_photos[8],
-                detail["article"]
-                ])
+            # data.append([
+            #     detail["id"],
+            #     create_EAN13(str(detail["code"])),
+            #     title,
+            #     vendor,
+            #     detail["code"],
+            #     main_photo,
+            #     other_photos[0],
+            #     other_photos[1],
+            #     other_photos[2],
+            #     other_photos[3],
+            #     other_photos[4],
+            #     other_photos[5],
+            #     other_photos[6],
+            #     other_photos[7],
+            #     other_photos[8],
+            #     detail["article"]
+            #     ])
+            print(detail["code"] + " - " + create_EAN13(detail["code"]))
         start += limit            
             
     
-def create_EAN13(detail_id):    
+def create_EAN13(detail_code):
+    detail_id = ""
+    for sign in detail_code:
+        if sign.isalpha():
+            detail_id = detail_id + str(ord(sign))
+        else:
+            detail_id = detail_id + str(sign)
     while len(detail_id) < 11:
         detail_id = "0" + detail_id
     detail_id = "1" + detail_id
@@ -590,7 +610,7 @@ def create_EAN13(detail_id):
             nechetnie += int(i)
         index += 1
     result = chetnie * 3 + nechetnie
-    if result != 0:
+    if result % 10 != 0:
         thirteen_char = 10 - (result % 10)
     else:
         thirteen_char = 0
@@ -744,57 +764,50 @@ def main():
     
 
 def test():
-    start = datetime.now()
-    aa = AA("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_autopiter.xlsx", fields_for_autopiter)
-    aa.get_xlsx() 
-    avito = Avito("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_avito.xlsx", fields_for_avito)
-    avito.get_xlsx()   
-    gis = TwoGis("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_2gis.xlsx", fields_for_2gis)
-    gis.get_xlsx()
-    zzap = ZZap("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_zzap.xlsx", fields_for_zzap)
-    zzap.get_xlsx()
-    cfk = Cfk("D:/parsing/Цены_" + today[2] + '_' + today[1] + '_' + today[0][2:] + ".xlsx", 
-              "D:/parsing/Остатки_" + today[2] + '_' + today[1] + '_' + today[0][2:] + ".xlsx", 
-              fields_for_cfk_price, fields_for_cfk_leftover)
-    cfk.get_xlsx()
-    drom = Drom("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_drom.xlsx", fields_for_drom)
-    drom.get_xlsx()
-    spl = SPL("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_spl.xlsx", fields_for_spl)
-    spl.get_xlsx()  
-    rees = Rees46("D:/parsing/Rees46.xml")
-    rees.get_xml()
-    yandex = Yandex("D:/parsing/yandex.xml")
-    yandex.get_xml(False)
-    yandex_direct = Yandex("D:/parsing/yandex_direct.xml")
-    yandex_direct.get_xml(True)
-    yandex_direct.get_published_count()
-    yandex_direct.download_images()
+    start = datetime.now() 
+    autoAlpha = AutoAlpha("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_AutoAlpha_" + str(start.hour) + ".xlsx", fields_for_autoAlpha)
+    autoAlpha.get_xlsx()
+    if start.hour < 12:
+        aa = AA("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_autopiter_AA_" + str(start.hour) + ".xlsx", fields_for_autopiter)
+        aa.get_xlsx("AA")
+        rcavtodiler = AA("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_rcavtodiler.xlsx", fields_for_autopiter)
+        rcavtodiler.get_xlsx("N")
+        avito = Avito("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_avito.xlsx", fields_for_avito)
+        avito.get_xlsx()   
+        gis = TwoGis("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_2gis.xlsx", fields_for_2gis)
+        gis.get_xlsx()
+        # #------------------------------------------------
+        # Не грузить, распоряжение Горбунова И.В.
+        # zzap = ZZap("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_zzap.xlsx", fields_for_zzap)
+        # zzap.get_xlsx()
+        # cfk = Cfk("D:/parsing/Цены_" + today[2] + '_' + today[1] + '_' + today[0][2:] + ".xlsx", 
+        #           "D:/parsing/Остатки_" + today[2] + '_' + today[1] + '_' + today[0][2:] + ".xlsx", 
+        #           fields_for_cfk_price, fields_for_cfk_leftover)
+        # cfk.get_xlsx()
+        #------------------------------------------------
+        drom = Drom("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_drom.xlsx", fields_for_drom)
+        drom.get_xlsx()
+        spl = SPL("D:/parsing/tdbovid_" + today[2] + '_' + today[1] + '_' + today[0][2:] + "_spl.xlsx", fields_for_spl)
+        spl.get_xlsx()
+        # sberMarket_xls()
+        #------------------------------------------------
+        # Не грузить, распоряжение Горбунова И.В.
+        # rees = Rees46("D:/parsing/Rees46.xml")
+        # rees.get_xml()
+        #------------------------------------------------
+        yandex = Yandex("D:/parsing/yandex.xml")
+        yandex.get_xml(False)
+        yandex_direct = Yandex("D:/parsing/yandex_direct.xml")
+        yandex_direct.get_xml(True)
+        yandex_direct.get_published_count()
+        # yandex_market = YandexMarket("D:/parsing/yandexMarket.xlsx", fields_for_YandexM)
+        # yandex_market.get_xlsx()
+        # vk = VK("D:/parsing/vk.xlsx", field_for_VK)
+        # vk.get_xlsx()
+        # # yandex_direct.download_images()
     total = (datetime.now() - start).total_seconds()
     print("Общее время - " + str(int(total//3600)) + ":" + str(int((total % 3600)//60)) + ":" + str(round(total % 60)))
 
           
 if __name__ == "__main__":
-    test()    
-
-
-# function foo(){
-#     let x = 0;
-#     return function() {
-#         return x++;
-#     }
-# }
-    
-# let bar = foo();
-# let baz = foo();
-# bar() //0
-# bar() //1
-# baz() //0
-# bar() //2
-# baz() //1
-    
-    
-    
-    
-    
-    
-    
+    test()     

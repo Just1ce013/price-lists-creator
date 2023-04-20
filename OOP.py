@@ -3,14 +3,17 @@ from requests.adapters import HTTPAdapter
 from datetime import date
 from xml.etree.ElementTree import ElementTree
 import wget
+from fake_useragent import UserAgent
 
 class Ploschadka:
     
     URL = 'https://tdbovid.ru/katalog_zapchastej'
     BASE_URL = 'https://tdbovid.ru'
+    ua = UserAgent()
     today = str(date.today()).split('-')
     tdbovid_adapter = HTTPAdapter(max_retries=5)
     session = requests.Session()
+    session.headers.update({ 'User-Agent': ua.random })
     session.mount(BASE_URL, tdbovid_adapter)              
     tree = ElementTree()
     category_names = {"ural":"Урал","ural-63685-636746563-dorozhnaya-gamma-i-ural-6370":"УРАЛ-63685, 63674,6563 (ДОРОЖНАЯ ГАММА) И УРАЛ-6370",
@@ -19,7 +22,7 @@ class Ploschadka:
               "cat":"CAT","hitachi":"Hitachi","hyundai":"HYUNDAI","iveco":"IVECO","komatsu":"KOMATSU","avtobusy":"Автобусы","avtokrany-i-kmu":"Автокраны и КМУ",
               "akkumulyatory":"Аккумуляторы","vaz":"ВАЗ","dz-98-dz-180":"ДЗ-98;ДЗ-180","dt-75":"ДТ-75","instrument":"Инструмент",
               "legkovye-inomarkigruzovye-inomarkikommercheskij-transport":"Легковые иномарки","mtz":"МТЗ","pogruzchiki":"Погрузчики",
-              "podshipniki":"Подшипники","porschnevaya-gruppa-vaz-motordetal":"Поршневая группа ВАЗ Мотордеталь","porschnevaya-gruppa-urkaina":"Поршневая группа Украина",
+              "podshipniki":"Подшипники","porschnevaya-gruppa-vaz-motordetal":"Поршневая группа ВАЗ Мотордеталь","porshnevaya-gruppa-motordetal":"Поршневая группа Мотордеталь",
               "pricepy":"Прицепы","prochie":"Прочие","radiatory-lrz":"Радиаторы ЛРЗ","rvd":"РВД","t-150":"Т-150","t-170":"Т-170","t-40":"Т-40",
               "filtry-i-komplekty-prokladok-motordetal":"Фильтры и комплекты прокладок МОТОРДЕТАЛЬ","shaaz":"ШААЗ","ekskavator":"Экскаватор",
               "yumz":"ЮМЗ","rasprodazha":"Распродажа"}

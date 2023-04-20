@@ -4,9 +4,9 @@ import xlsxwriter as xl
 
 class SPL(Ploschadka):
     
-    stop_categories = ["Автошины", "ВАЗ", "УАЗ", "ГАЗ легковой", "Инструмент", 
-                           "Легковые иномарки", "Поршневая группа", "Поршневая группа ВАЗ Мотордеталь", 
-                           "Поршневая группа Мотордеталь", "Поршневая группа Украина", "Прочие", "Распродажа"]
+    # stop_categories = ["Автошины", "ВАЗ", "УАЗ", "ГАЗ легковой", "Инструмент", 
+    #                        "Легковые иномарки", "Поршневая группа", "Поршневая группа ВАЗ Мотордеталь", 
+    #                        "Поршневая группа Мотордеталь", "Поршневая группа Украина", "Прочие", "Распродажа"]
     
     def __init__(self, filename, fields):
         self.__filename = filename
@@ -34,39 +34,45 @@ class SPL(Ploschadka):
                     continue
                 if len(detail["storage"]) == 0:
                     continue 
-                
+                if len(detail["storage"]) == 1:
+                    if detail["storage"][0]["idstorage"] == "":
+                        continue
                 category = list(filter(None, detail["uri"].split('/')))[1]
                 if category not in self.category_names.keys():
                     continue
-                if self.category_names[category] in self.stop_categories:
-                    continue
+                
+                # Грузить все группы, распоряжение Горбунова И.В.
+                # if self.category_names[category] in self.stop_categories:
+                #     continue
                 
                 store = {}
                 nalichie = 0
                 for el in detail["storage"]:
                     amount = str(el["amount"])
-                    if el["namestorage"] == "г. Челябинск, ул.Линейная, 98":
+                    if el["codestorage"] == "00006" or el["codestorage"] == "00008" or el["codestorage"] == "00009":
                         if amount[0] != "-":
                             if amount.find("\xa0") > 0:
                                 nalichie += round(float(amount[:amount.find("\xa0")]))
-                                store[el["namestorage"]] = nalichie
+                                store[el["namestorage"].replace(" ", "")] = nalichie
                             else:
                                 nalichie += round(float(amount.replace(",",".")))
-                                store[el["namestorage"]] = nalichie
+                                store[el["namestorage"].replace(" ", "")] = nalichie
                 if nalichie == 0:
                     continue
                 
                 links = self.pic_links(detail["images"])
+                
+                price = detail["price"]
                 
                 self.data.append([
                     self.category_names[category],
                     detail["article"],
                     detail["code"],
                     detail["title"],
-                    detail["price"],
+                    price,
                     nalichie,
                     nalichie,
-                    detail["price"],
+                    price,
                     links
                 ])
                 
